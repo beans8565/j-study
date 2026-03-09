@@ -20,13 +20,22 @@ export default function ReportsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [indvTab, setIndvTab] = useState<'plan'|'mock'|'inspection'>('inspection')
   const [indvReports, setIndvReports] = useState<any[]>([
-    { id: '1', studentId: 'S001', type: 'inspection', date: '2026-03-01', title: '3월 1주차 학습 점검', content: '수학 과제 성취도 90% 달성, 국어 비문학 보완 필요' },
-    { id: '2', studentId: 'S001', type: 'inspection', date: '2026-03-08', title: '3월 2주차 학습 점검', content: '영어 단어 암기 우수, 탐구 영역 복습량 부족' },
-    { id: '3', studentId: 'S001', type: 'plan', date: '2026-03-02', title: '3월 첫째주 계획표', content: '수학 기출 3회독, 영어 단어 500개 암기' },
-    { id: '4', studentId: 'S001', type: 'mock', date: '2026-03-05', title: '3월 학력평가 분석', content: '국어 85점, 수학 92점, 영어 88점. 수학 빈칸추론 약점 보완 필요.' }
+    { id: '1', studentId: 'S001', type: 'inspection', date: '2026-03-01', title: '3월 1주차 학습 점검', content: '', studyAttitude: '수업 중 집중력 양호, 질문에 적극적으로 답변함.', selfStudyAttitude: '자습 시간 중 졸음 빈도 낮음, 목표 분량 달성.' },
+    { id: '2', studentId: 'S001', type: 'inspection', date: '2026-03-08', title: '3월 2주차 학습 점검', content: '', studyAttitude: '수학 문제 풀이 시 오답 노트 활용 우수.', selfStudyAttitude: '휴대폰 제출 후 자습에 온전히 집중하는 모습 보임.' },
+    { id: '3', studentId: 'S001', type: 'plan', date: '2026-03-02', title: '3월 첫째주 계획표', content: '수학 기출 3회독, 영어 단어 500개 암기', studyAttitude: '', selfStudyAttitude: '' },
+    { id: '4', studentId: 'S001', type: 'mock', date: '2026-03-05', title: '3월 학력평가 분석', content: '국어 85점, 수학 92점, 영어 88점. 수학 빈칸추론 약점 보완 필요.', studyAttitude: '', selfStudyAttitude: '' }
   ])
   const [isEditingIndv, setIsEditingIndv] = useState<string | null>(null)
-  const [indvForm, setIndvForm] = useState({ date: '', title: '', content: '' })
+  const [indvForm, setIndvForm] = useState({ date: '', title: '', content: '', studyAttitude: '', selfStudyAttitude: '' })
+
+  const [operationLogs, setOperationLogs] = useState<any[]>([])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('jstudy_operations')
+    if (saved) {
+      setOperationLogs(JSON.parse(saved))
+    }
+  }, [])
 
   const activeStudents = students.filter(s => s.branch === currentBranch && s.enrollmentStatus === '재원');
 
@@ -60,11 +69,13 @@ export default function ReportsPage() {
       type: indvTab,
       date: new Date().toISOString().split('T')[0],
       title: '새 점검 리포트',
-      content: ''
+      content: '',
+      studyAttitude: '',
+      selfStudyAttitude: ''
     }
     setIndvReports([newRep, ...indvReports])
     setIsEditingIndv(newRep.id)
-    setIndvForm({ date: newRep.date, title: newRep.title, content: newRep.content })
+    setIndvForm({ date: newRep.date, title: newRep.title, content: newRep.content, studyAttitude: newRep.studyAttitude, selfStudyAttitude: newRep.selfStudyAttitude })
   }
 
   const handleSaveIndvReport = () => {
@@ -96,7 +107,18 @@ export default function ReportsPage() {
           <h2 style="margin-top: 0; font-size: 22px; color: #0f172a; margin-bottom: 20px;">
             ${report.title}
           </h2>
-          <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.content || '내용이 없습니다.'}</div>
+          ${report.type === 'inspection' ? `
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 16px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 12px;">학습태도 (정규 수업 중)</h3>
+              <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.studyAttitude || '내용이 없습니다.'}</div>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 12px;">자습태도 (자습 시간 집중도)</h3>
+              <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.selfStudyAttitude || '내용이 없습니다.'}</div>
+            </div>
+          ` : `
+            <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.content || '내용이 없습니다.'}</div>
+          `}
         </div>
         <div style="text-align: center; margin-top: 60px; font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 20px;">
           <strong>제이스터디(J-Study) 관리형 독서실</strong><br>
@@ -313,12 +335,87 @@ export default function ReportsPage() {
                               <Input type="date" value={indvForm.date} onChange={e => setIndvForm({...indvForm, date: e.target.value})} className="w-40 font-medium" />
                               <Input value={indvForm.title} onChange={e => setIndvForm({...indvForm, title: e.target.value})} placeholder="리포트 제목 (예: 3월 2주차 주간 상담)" className="flex-1 font-bold text-lg" />
                             </div>
-                            <textarea 
-                              value={indvForm.content} 
-                              onChange={e => setIndvForm({...indvForm, content: e.target.value})}
-                              placeholder="점검 및 상담 내용을 상세히 기록하세요..."
-                              className="w-full h-40 p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
-                            />
+                            {report.type === 'inspection' ? (
+                              <div className="flex gap-4">
+                                <div className="flex-1 space-y-4">
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 mb-1">학습태도 (정규 수업 중)</label>
+                                    <textarea 
+                                      value={indvForm.studyAttitude} 
+                                      onChange={e => setIndvForm({...indvForm, studyAttitude: e.target.value})}
+                                      placeholder="수업 집중도, 과제 수행, 질문 태도 등을 기록하세요..."
+                                      className="w-full h-32 p-3 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 mb-1">자습태도 (자습 시간 집중도)</label>
+                                    <textarea 
+                                      value={indvForm.selfStudyAttitude} 
+                                      onChange={e => setIndvForm({...indvForm, selfStudyAttitude: e.target.value})}
+                                      placeholder="졸음 빈도, 이석 시간, 집중력 유지 등을 기록하세요..."
+                                      className="w-full h-32 p-3 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="w-64 bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-y-auto max-h-[280px]">
+                                  <h6 className="font-bold text-slate-700 text-xs mb-3 flex items-center"><UserCheck size={14} className="mr-1" />참고: 누적 특이사항</h6>
+                                  {(() => {
+                                    const st = activeStudents.find(s => s.id === report.studentId);
+                                    const relatedLogs = operationLogs.filter(l => l.studentName === st?.name && l.branch === currentBranch);
+                                    return (
+                                      <div className="space-y-3">
+                                        <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                          <p className="text-[10px] font-bold text-slate-400 mb-1">출결/동선 이슈</p>
+                                          <p className="text-[11px] font-medium text-slate-700 leading-tight">{st?.issue || '기록 없음'}</p>
+                                        </div>
+                                        {relatedLogs.length > 0 ? relatedLogs.map(l => (
+                                          <div key={l.id} className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                            <p className="text-[10px] font-bold text-slate-400 mb-0.5">{l.date} [{l.category}]</p>
+                                            <p className="text-[11px] font-medium text-slate-700 leading-tight mb-1">{l.content}</p>
+                                            <p className="text-[10px] text-blue-600 font-medium">조치: {l.response || '없음'}</p>
+                                          </div>
+                                        )) : (
+                                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                            <p className="text-[11px] text-slate-500 text-center">운영 특이사항 없음</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })()}
+                                </div>
+                              </div>
+                            ) : report.type === 'plan' ? (
+                              <div className="space-y-4">
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 hover:bg-slate-100 transition-colors">
+                                  <input type="file" id={`file-upload-${report.id}`} className="hidden" accept=".hwp,.pdf,.doc,.docx" onChange={(e) => {
+                                    if(e.target.files && e.target.files[0]) {
+                                      const fileName = e.target.files[0].name;
+                                      setIndvForm({...indvForm, content: `[첨부파일] ${fileName}\n\n` + indvForm.content});
+                                    }
+                                  }} />
+                                  <label htmlFor={`file-upload-${report.id}`} className="cursor-pointer flex flex-col items-center">
+                                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 border border-slate-200 text-slate-500 hover:text-blue-600 transition-colors">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    </div>
+                                    <p className="font-bold text-slate-700 mb-1">계획표 파일 업로드 (HWP, PDF)</p>
+                                    <p className="text-xs text-slate-500">클릭하여 파일을 선택하세요.</p>
+                                  </label>
+                                </div>
+                                <textarea 
+                                  value={indvForm.content} 
+                                  onChange={e => setIndvForm({...indvForm, content: e.target.value})}
+                                  placeholder="추가 코멘트나 텍스트 계획을 기록하세요..."
+                                  className="w-full h-32 p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
+                                />
+                              </div>
+                            ) : (
+                              <textarea 
+                                value={indvForm.content} 
+                                onChange={e => setIndvForm({...indvForm, content: e.target.value})}
+                                placeholder={report.type === 'mock' ? "모의고사 성적 (과목별 등급/원점수) 및 분석을 기록하세요..." : "점검 및 상담 내용을 상세히 기록하세요..."}
+                                className="w-full h-40 p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
+                              />
+                            )}
                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                               <Button variant="outline" onClick={() => setIsEditingIndv(null)} className="font-bold text-slate-600">작성 취소</Button>
                               <Button onClick={handleSaveIndvReport} className="bg-blue-600 hover:bg-blue-700 font-bold px-6">저장 완료</Button>
@@ -332,15 +429,28 @@ export default function ReportsPage() {
                                 <h4 className="text-lg font-black text-slate-800">{report.title}</h4>
                               </div>
                               <div className="flex gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity bg-slate-50 p-1 rounded-lg border border-slate-100">
-                                <button onClick={() => { setIsEditingIndv(report.id); setIndvForm({ date: report.date, title: report.title, content: report.content }) }} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-md transition-colors" title="수정"><Edit size={16}/></button>
+                                <button onClick={() => { setIsEditingIndv(report.id); setIndvForm({ date: report.date, title: report.title, content: report.content, studyAttitude: report.studyAttitude || '', selfStudyAttitude: report.selfStudyAttitude || '' }) }} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-md transition-colors" title="수정"><Edit size={16}/></button>
                                 <button onClick={() => handleExportPDF(report)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md transition-colors" title="PDF 인쇄"><Printer size={16}/></button>
                                 <div className="w-px h-auto bg-slate-200 mx-0.5"></div>
                                 <button onClick={() => handleDeleteIndvReport(report.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={16}/></button>
                               </div>
                             </div>
-                            <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
-                              {report.content || <span className="text-slate-400 italic">입력된 내용이 없습니다. 수정 버튼을 눌러 내용을 작성하세요.</span>}
-                            </div>
+                            {report.type === 'inspection' ? (
+                              <div className="space-y-4">
+                                <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
+                                  <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200 pb-2">학습태도 (정규 수업 중)</h5>
+                                  {report.studyAttitude || <span className="text-slate-400 italic">입력된 내용이 없습니다.</span>}
+                                </div>
+                                <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
+                                  <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200 pb-2">자습태도 (자습 시간 집중도)</h5>
+                                  {report.selfStudyAttitude || <span className="text-slate-400 italic">입력된 내용이 없습니다.</span>}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
+                                {report.content || <span className="text-slate-400 italic">입력된 내용이 없습니다. 수정 버튼을 눌러 내용을 작성하세요.</span>}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

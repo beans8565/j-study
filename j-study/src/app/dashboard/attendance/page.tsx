@@ -36,6 +36,29 @@ const updateIssueString = (currentIssue: string | null, periodsArr: string[], ne
     return issues.length > 0 ? issues.join(' / ') : null;
 };
 
+const addOperationLog = (studentName: string, category: string, content: string, branch: string) => {
+  try {
+    const existing = localStorage.getItem('jstudy_operations');
+    const logs = existing ? JSON.parse(existing) : [];
+    const now = new Date();
+    const newLog = {
+      id: Date.now().toString(),
+      date: now.toISOString().split('T')[0],
+      time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+      studentName,
+      category,
+      content,
+      response: '',
+      isCompleted: false,
+      branch
+    };
+    logs.unshift(newLog);
+    localStorage.setItem('jstudy_operations', JSON.stringify(logs));
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 export default function AttendanceDashboard() {
   const { currentBranch, students: allStudents, setStudents } = useDashboard();
   const branchStudents = allStudents.filter(s => s.branch === currentBranch);
@@ -66,6 +89,7 @@ export default function AttendanceDashboard() {
         let updates: any = { periods: { ...s.periods, [period]: newStatus } };
         if (['학교', '가족일정', '결석', '휴식권'].includes(newStatus)) {
           updates.issue = updateIssueString(s.issue, [period], `[${period}] ${newStatus}`, false);
+          addOperationLog(s.name, newStatus === '결석' ? '결석' : '출결/동선', `[${period}] ${newStatus}`, currentBranch);
         } else if (newStatus === '출석' || newStatus === '미체크') {
           updates.issue = updateIssueString(s.issue, [period], null, true);
         }
@@ -100,6 +124,11 @@ export default function AttendanceDashboard() {
     if (type === 'late') { if (!val1) return; finalStatus = '지각'; newEntry = `[${periodLabel}] 지각 (${val1}분)`; } 
     else if (type === 'academy') { if (!val1 || !val2) return; finalStatus = '학원/과외'; newEntry = `[${periodLabel}] 학원/과외 (${val1} ~ ${val2})`; } 
     else if (type === 'other') { if (!val1.trim()) return; finalStatus = '기타'; newEntry = `[${periodLabel}] 기타 - ${val1}`; }
+
+    const st = allStudents.find(s => s.id === studentId);
+    if (st) {
+      addOperationLog(st.name, finalStatus === '지각' ? '지각' : '출결/동선', newEntry, currentBranch);
+    }
 
     setStudents(allStudents.map(s => {
       if (s.id === studentId) {

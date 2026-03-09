@@ -8,6 +8,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDashboard } from "@/components/providers/DashboardProvider"
 import { CalendarDays, CalendarRange, UserCheck, Printer, Plus, Edit, Trash2 } from "lucide-react"
 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title as ChartTitle,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ChartTitle,
+  Tooltip,
+  Legend
+);
+
 export default function ReportsPage() {
   const { currentBranch, students } = useDashboard()
   const [activeTab, setActiveTab] = useState('daily') // daily, weekly, individual
@@ -23,10 +45,11 @@ export default function ReportsPage() {
     { id: '1', studentId: 'S001', type: 'inspection', date: '2026-03-01', title: '3월 1주차 학습 점검', content: '', studyAttitude: '수업 중 집중력 양호, 질문에 적극적으로 답변함.', selfStudyAttitude: '자습 시간 중 졸음 빈도 낮음, 목표 분량 달성.' },
     { id: '2', studentId: 'S001', type: 'inspection', date: '2026-03-08', title: '3월 2주차 학습 점검', content: '', studyAttitude: '수학 문제 풀이 시 오답 노트 활용 우수.', selfStudyAttitude: '휴대폰 제출 후 자습에 온전히 집중하는 모습 보임.' },
     { id: '3', studentId: 'S001', type: 'plan', date: '2026-03-02', title: '3월 첫째주 계획표', content: '수학 기출 3회독, 영어 단어 500개 암기', studyAttitude: '', selfStudyAttitude: '' },
-    { id: '4', studentId: 'S001', type: 'mock', date: '2026-03-05', title: '3월 학력평가 분석', content: '국어 85점, 수학 92점, 영어 88점. 수학 빈칸추론 약점 보완 필요.', studyAttitude: '', selfStudyAttitude: '' }
+    { id: '4', studentId: 'S001', type: 'mock', date: '2026-03-05', title: '3월 학력평가', content: '전반적으로 양호하나 수학 빈칸추론 약점 보완 필요.', studyAttitude: '', selfStudyAttitude: '', mockData: { kGrade: '2', kScore: '85', mGrade: '1', mScore: '92', eGrade: '1', eScore: '88', o1Name: '물리학I', o1Grade: '2', o1Score: '42', o2Name: '지구과학I', o2Grade: '1', o2Score: '47' } }
   ])
   const [isEditingIndv, setIsEditingIndv] = useState<string | null>(null)
-  const [indvForm, setIndvForm] = useState({ date: '', title: '', content: '', studyAttitude: '', selfStudyAttitude: '' })
+  const defaultMockData = { kGrade: '', kScore: '', mGrade: '', mScore: '', eGrade: '', eScore: '', o1Name: '', o1Grade: '', o1Score: '', o2Name: '', o2Grade: '', o2Score: '' }
+  const [indvForm, setIndvForm] = useState({ date: '', title: '', content: '', studyAttitude: '', selfStudyAttitude: '', mockData: defaultMockData })
 
   const [operationLogs, setOperationLogs] = useState<any[]>([])
 
@@ -68,14 +91,15 @@ export default function ReportsPage() {
       studentId: selectedStudentId,
       type: indvTab,
       date: new Date().toISOString().split('T')[0],
-      title: '새 점검 리포트',
+      title: '새 리포트',
       content: '',
       studyAttitude: '',
-      selfStudyAttitude: ''
+      selfStudyAttitude: '',
+      mockData: defaultMockData
     }
     setIndvReports([newRep, ...indvReports])
     setIsEditingIndv(newRep.id)
-    setIndvForm({ date: newRep.date, title: newRep.title, content: newRep.content, studyAttitude: newRep.studyAttitude, selfStudyAttitude: newRep.selfStudyAttitude })
+    setIndvForm({ date: newRep.date, title: newRep.title, content: newRep.content, studyAttitude: newRep.studyAttitude, selfStudyAttitude: newRep.selfStudyAttitude, mockData: defaultMockData })
   }
 
   const handleSaveIndvReport = () => {
@@ -141,6 +165,53 @@ export default function ReportsPage() {
       }, 300);
     }
   }
+
+  // Data prep for chart
+  const studentMockReports = indvReports.filter(r => r.studentId === selectedStudentId && r.type === 'mock').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  const mockChartData = {
+    labels: studentMockReports.map(r => r.title),
+    datasets: [
+      {
+        label: '국어 등급',
+        data: studentMockReports.map(r => Number(r.mockData?.kGrade) || null),
+        borderColor: 'rgb(239, 68, 68)',
+        backgroundColor: 'rgba(239, 68, 68, 0.5)',
+        tension: 0.3
+      },
+      {
+        label: '수학 등급',
+        data: studentMockReports.map(r => Number(r.mockData?.mGrade) || null),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        tension: 0.3
+      },
+      {
+        label: '영어 등급',
+        data: studentMockReports.map(r => Number(r.mockData?.eGrade) || null),
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.5)',
+        tension: 0.3
+      }
+    ]
+  };
+  
+  const mockChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        reverse: true, // Lower grade is better
+        min: 1,
+        max: 9,
+        ticks: { stepSize: 1 }
+      }
+    },
+    plugins: {
+      legend: { position: 'top' as const },
+      title: { display: false }
+    }
+  };
 
   return (
     <div className="flex h-full min-h-[calc(100vh-64px)]">
@@ -319,6 +390,15 @@ export default function ReportsPage() {
                       <Plus size={16} className="mr-2" /> 새 기록 작성
                     </Button>
                   </div>
+
+                  {indvTab === 'mock' && studentMockReports.length > 0 && (
+                    <div className="mb-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <h4 className="font-bold text-slate-700 text-sm mb-4">누적 모의고사 등급 추이</h4>
+                      <div className="h-48 w-full">
+                        <Line data={mockChartData} options={mockChartOptions} />
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="grid gap-4">
                     {indvReports.filter(r => r.studentId === selectedStudentId && r.type === indvTab).length === 0 ? (
@@ -408,11 +488,47 @@ export default function ReportsPage() {
                                   className="w-full h-32 p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
                                 />
                               </div>
+                            ) : report.type === 'mock' ? (
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-600 block text-center bg-white py-1 rounded border border-slate-200">국어</label>
+                                    <Input value={indvForm.mockData?.kGrade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, kGrade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
+                                    <Input value={indvForm.mockData?.kScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, kScore: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-600 block text-center bg-white py-1 rounded border border-slate-200">수학</label>
+                                    <Input value={indvForm.mockData?.mGrade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, mGrade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
+                                    <Input value={indvForm.mockData?.mScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, mScore: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-600 block text-center bg-white py-1 rounded border border-slate-200">영어</label>
+                                    <Input value={indvForm.mockData?.eGrade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, eGrade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
+                                    <Input value={indvForm.mockData?.eScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, eScore: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Input value={indvForm.mockData?.o1Name} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Name: e.target.value}})} placeholder="탐구1 과목명" className="h-6 text-[11px] font-bold bg-white text-center border border-slate-200 rounded px-1 w-full" />
+                                    <Input value={indvForm.mockData?.o1Grade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Grade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
+                                    <Input value={indvForm.mockData?.o1Score} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Score: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Input value={indvForm.mockData?.o2Name} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Name: e.target.value}})} placeholder="탐구2 과목명" className="h-6 text-[11px] font-bold bg-white text-center border border-slate-200 rounded px-1 w-full" />
+                                    <Input value={indvForm.mockData?.o2Grade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Grade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
+                                    <Input value={indvForm.mockData?.o2Score} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Score: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
+                                  </div>
+                                </div>
+                                <textarea 
+                                  value={indvForm.content} 
+                                  onChange={e => setIndvForm({...indvForm, content: e.target.value})}
+                                  placeholder="전체적인 분석 및 코멘트를 기록하세요..."
+                                  className="w-full h-24 p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
+                                />
+                              </div>
                             ) : (
                               <textarea 
                                 value={indvForm.content} 
                                 onChange={e => setIndvForm({...indvForm, content: e.target.value})}
-                                placeholder={report.type === 'mock' ? "모의고사 성적 (과목별 등급/원점수) 및 분석을 기록하세요..." : "점검 및 상담 내용을 상세히 기록하세요..."}
+                                placeholder="점검 및 상담 내용을 상세히 기록하세요..."
                                 className="w-full h-40 p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none leading-relaxed transition-all"
                               />
                             )}
@@ -429,7 +545,7 @@ export default function ReportsPage() {
                                 <h4 className="text-lg font-black text-slate-800">{report.title}</h4>
                               </div>
                               <div className="flex gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity bg-slate-50 p-1 rounded-lg border border-slate-100">
-                                <button onClick={() => { setIsEditingIndv(report.id); setIndvForm({ date: report.date, title: report.title, content: report.content, studyAttitude: report.studyAttitude || '', selfStudyAttitude: report.selfStudyAttitude || '' }) }} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-md transition-colors" title="수정"><Edit size={16}/></button>
+                                <button onClick={() => { setIsEditingIndv(report.id); setIndvForm({ date: report.date, title: report.title, content: report.content, studyAttitude: report.studyAttitude || '', selfStudyAttitude: report.selfStudyAttitude || '', mockData: report.mockData || defaultMockData }) }} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-md transition-colors" title="수정"><Edit size={16}/></button>
                                 <button onClick={() => handleExportPDF(report)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md transition-colors" title="PDF 인쇄"><Printer size={16}/></button>
                                 <div className="w-px h-auto bg-slate-200 mx-0.5"></div>
                                 <button onClick={() => handleDeleteIndvReport(report.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={16}/></button>
@@ -444,6 +560,41 @@ export default function ReportsPage() {
                                 <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
                                   <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200 pb-2">자습태도 (자습 시간 집중도)</h5>
                                   {report.selfStudyAttitude || <span className="text-slate-400 italic">입력된 내용이 없습니다.</span>}
+                                </div>
+                              </div>
+                            ) : report.type === 'mock' ? (
+                              <div className="space-y-4">
+                                {report.mockData && (
+                                  <div className="grid grid-cols-5 gap-2 text-center text-sm border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
+                                      <div className="font-bold text-slate-700 mb-1">국어</div>
+                                      <div className="text-blue-600 font-black text-xl">{report.mockData.kGrade || '-'}등급</div>
+                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.kScore || '-'}점</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
+                                      <div className="font-bold text-slate-700 mb-1">수학</div>
+                                      <div className="text-blue-600 font-black text-xl">{report.mockData.mGrade || '-'}등급</div>
+                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.mScore || '-'}점</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
+                                      <div className="font-bold text-slate-700 mb-1">영어</div>
+                                      <div className="text-blue-600 font-black text-xl">{report.mockData.eGrade || '-'}등급</div>
+                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.eScore || '-'}점</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
+                                      <div className="font-bold text-slate-700 mb-1">{report.mockData.o1Name || '탐구1'}</div>
+                                      <div className="text-blue-600 font-black text-xl">{report.mockData.o1Grade || '-'}등급</div>
+                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.o1Score || '-'}점</div>
+                                    </div>
+                                    <div className="bg-slate-50 p-3">
+                                      <div className="font-bold text-slate-700 mb-1">{report.mockData.o2Name || '탐구2'}</div>
+                                      <div className="text-blue-600 font-black text-xl">{report.mockData.o2Grade || '-'}등급</div>
+                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.o2Score || '-'}점</div>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
+                                  {report.content || <span className="text-slate-400 italic">입력된 분석 내용이 없습니다.</span>}
                                 </div>
                               </div>
                             ) : (

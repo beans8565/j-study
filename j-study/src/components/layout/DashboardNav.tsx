@@ -37,7 +37,7 @@ export default function DashboardNav() {
     { name: "신규 문의 & CRM", href: "/dashboard/crm", icon: PhoneCall },
     { name: "출결 및 동선 관리", href: "/dashboard/attendance", icon: Clock },
     { name: "운영 및 특이사항", href: "/dashboard/operations", icon: FileText },
-    { name: "벌점 및 휴식권 관리", href: "#", icon: Ticket, alert: "벌점 및 휴식권 관리 장부 화면은 추후 개발 예정입니다." },
+    { name: "벌점 및 휴식권 관리", href: "/dashboard/demerit", icon: Ticket },
   ]
 
   const handleNavClick = (e: React.MouseEvent, alertMsg?: string) => {

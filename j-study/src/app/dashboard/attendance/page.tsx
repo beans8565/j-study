@@ -87,12 +87,49 @@ export default function AttendanceDashboard() {
     setStudents(allStudents.map(s => {
       if (s.id === id) {
         let updates: any = { periods: { ...s.periods, [period]: newStatus } };
+        let historyEntry = null;
+
         if (['학교', '가족일정', '결석', '휴식권'].includes(newStatus)) {
           updates.issue = updateIssueString(s.issue, [period], `[${period}] ${newStatus}`, false);
           addOperationLog(s.name, newStatus === '결석' ? '결석' : '출결/동선', `[${period}] ${newStatus}`, currentBranch);
+          
+          if (newStatus === '휴식권') {
+            updates.restTickets = (s.restTickets || 0) - 1;
+            historyEntry = {
+              id: Date.now().toString(),
+              date: new Date().toISOString().split('T')[0],
+              type: 'rest',
+              reason: `휴식권 사용 (${period})`,
+              effectDemerit: 0,
+              effectRest: -1,
+              note: '[출결 시스템 연동] 정규 교시 휴식권 1장 자동 차감'
+            };
+          } else if (newStatus === '결석') {
+            const savedRules = localStorage.getItem('jstudy_rules');
+            const rules = savedRules ? JSON.parse(savedRules) : [];
+            const absRule = rules.find((r:any) => r.name.includes('결석'));
+            if (absRule) {
+              updates.penaltyPoints = Math.max(0, (s.penaltyPoints || 0) + absRule.demerit);
+              updates.restTickets = (s.restTickets || 0) + absRule.rest;
+              historyEntry = {
+                id: Date.now().toString(),
+                date: new Date().toISOString().split('T')[0],
+                type: 'rule',
+                reason: absRule.name,
+                effectDemerit: absRule.demerit,
+                effectRest: absRule.rest,
+                note: `[출결 시스템 연동] 결석 자동 규정 적용`
+              };
+            }
+          }
         } else if (newStatus === '출석' || newStatus === '미체크') {
           updates.issue = updateIssueString(s.issue, [period], null, true);
         }
+
+        if (historyEntry) {
+          updates.demeritHistory = [historyEntry, ...(s.demeritHistory || [])];
+        }
+
         return { ...s, ...updates };
       }
       return s;
@@ -137,7 +174,35 @@ export default function AttendanceDashboard() {
           updatedPeriods[p] = finalStatus;
         });
         const updatedIssue = updateIssueString(s.issue, sortedPeriods, newEntry, false);
-        return { ...s, periods: updatedPeriods, issue: updatedIssue };
+        
+        let extraUpdates: any = {};
+        if (finalStatus === '지각') {
+          const mins = parseInt(val1, 10);
+          const savedRules = localStorage.getItem('jstudy_rules');
+          const rules = savedRules ? JSON.parse(savedRules) : [];
+          
+          let ruleToApply = null;
+          if (mins >= 1 && mins <= 4) ruleToApply = rules.find((r:any) => r.name.includes('1~4분'));
+          else if (mins >= 5 && mins <= 29) ruleToApply = rules.find((r:any) => r.name.includes('5~29분'));
+          else if (mins >= 30) ruleToApply = rules.find((r:any) => r.name.includes('30분'));
+
+          if (ruleToApply) {
+            extraUpdates.penaltyPoints = Math.max(0, (s.penaltyPoints || 0) + ruleToApply.demerit);
+            extraUpdates.restTickets = (s.restTickets || 0) + ruleToApply.rest;
+            const historyEntry = {
+              id: Date.now().toString(),
+              date: new Date().toISOString().split('T')[0],
+              type: 'rule',
+              reason: ruleToApply.name,
+              effectDemerit: ruleToApply.demerit,
+              effectRest: ruleToApply.rest,
+              note: `[출결 시스템 연동] 지각(${mins}분) 자동 규정 적용`
+            };
+            extraUpdates.demeritHistory = [historyEntry, ...(s.demeritHistory || [])];
+          }
+        }
+
+        return { ...s, periods: updatedPeriods, issue: updatedIssue, ...extraUpdates };
       }
       return s;
     }));

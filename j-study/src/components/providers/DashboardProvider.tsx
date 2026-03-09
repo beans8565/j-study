@@ -47,6 +47,7 @@ export type Student = {
   // Penalty & Rest
   penaltyPoints: number;
   restTickets: number;
+  demeritHistory?: any[]; // For detailed history tracking
   
   createdAt: string;
 };

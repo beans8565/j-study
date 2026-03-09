@@ -48,8 +48,8 @@ export default function ReportsPage() {
     { id: '4', studentId: 'S001', type: 'mock', date: '2026-03-05', title: '3월 학력평가', content: '전반적으로 양호하나 수학 빈칸추론 약점 보완 필요.', studyAttitude: '', selfStudyAttitude: '', mockData: { kGrade: '2', kScore: '85', mGrade: '1', mScore: '92', eGrade: '1', eScore: '88', o1Name: '물리학I', o1Grade: '2', o1Score: '42', o2Name: '지구과학I', o2Grade: '1', o2Score: '47' } }
   ])
   const [isEditingIndv, setIsEditingIndv] = useState<string | null>(null)
-  const defaultMockData = { kGrade: '', kScore: '', mGrade: '', mScore: '', eGrade: '', eScore: '', o1Name: '', o1Grade: '', o1Score: '', o2Name: '', o2Grade: '', o2Score: '' }
-  const [indvForm, setIndvForm] = useState({ date: '', title: '', content: '', studyAttitude: '', selfStudyAttitude: '', mockData: defaultMockData })
+  const defaultMockData = { grade: '3학년', yearMonth: '', type: '평가원', detail: '', kGrade: '', kScore: '', mGrade: '', mScore: '', eGrade: '', eScore: '', o1Name: '', o1Grade: '', o1Score: '', o2Name: '', o2Grade: '', o2Score: '' }
+  const [indvForm, setIndvForm] = useState({ date: '', title: '', content: '', studyAttitude: '', selfStudyAttitude: '', mockData: defaultMockData, fileData: null as { name: string, url: string } | null })
 
   const [operationLogs, setOperationLogs] = useState<any[]>([])
 
@@ -95,16 +95,22 @@ export default function ReportsPage() {
       content: '',
       studyAttitude: '',
       selfStudyAttitude: '',
-      mockData: defaultMockData
+      mockData: defaultMockData,
+      fileData: null
     }
     setIndvReports([newRep, ...indvReports])
     setIsEditingIndv(newRep.id)
-    setIndvForm({ date: newRep.date, title: newRep.title, content: newRep.content, studyAttitude: newRep.studyAttitude, selfStudyAttitude: newRep.selfStudyAttitude, mockData: defaultMockData })
+    setIndvForm({ date: newRep.date, title: newRep.title, content: newRep.content, studyAttitude: newRep.studyAttitude, selfStudyAttitude: newRep.selfStudyAttitude, mockData: defaultMockData, fileData: null })
   }
 
   const handleSaveIndvReport = () => {
+    let finalForm = { ...indvForm };
+    if (indvTab === 'mock' && indvForm.mockData) {
+      const { grade, yearMonth, type } = indvForm.mockData;
+      finalForm.title = `${grade || ''} ${yearMonth || ''} ${type || ''}`.trim() || '모의고사 기록';
+    }
     setIndvReports(indvReports.map(r => 
-      r.id === isEditingIndv ? { ...r, ...indvForm } : r
+      r.id === isEditingIndv ? { ...r, ...finalForm } : r
     ))
     setIsEditingIndv(null)
   }
@@ -140,7 +146,23 @@ export default function ReportsPage() {
               <h3 style="font-size: 16px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 12px;">자습태도 (자습 시간 집중도)</h3>
               <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.selfStudyAttitude || '내용이 없습니다.'}</div>
             </div>
+          ` : report.type === 'mock' && report.mockData ? `
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 16px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 12px;">모의고사 성적</h3>
+              <ul style="list-style: none; padding: 0; margin: 0; font-size: 15px; color: #334155;">
+                <li style="margin-bottom: 5px;"><strong>국어:</strong> ${report.mockData.kGrade || '-'}등급 (${report.mockData.kScore || '-'}점)</li>
+                <li style="margin-bottom: 5px;"><strong>수학:</strong> ${report.mockData.mGrade || '-'}등급 (${report.mockData.mScore || '-'}점)</li>
+                <li style="margin-bottom: 5px;"><strong>영어:</strong> ${report.mockData.eGrade || '-'}등급 (${report.mockData.eScore || '-'}점)</li>
+                <li style="margin-bottom: 5px;"><strong>${report.mockData.o1Name || '탐구1'}:</strong> ${report.mockData.o1Grade || '-'}등급 (${report.mockData.o1Score || '-'}점)</li>
+                <li style="margin-bottom: 5px;"><strong>${report.mockData.o2Name || '탐구2'}:</strong> ${report.mockData.o2Grade || '-'}등급 (${report.mockData.o2Score || '-'}점)</li>
+              </ul>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 12px;">분석 및 코멘트</h3>
+              <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.content || '내용이 없습니다.'}</div>
+            </div>
           ` : `
+            ${report.type === 'plan' && report.fileData ? `<div style="margin-bottom: 15px; font-size: 14px; color: #2563eb; font-weight: bold;">[첨부파일: ${report.fileData.name}]</div>` : ''}
             <div style="white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155;">${report.content || '내용이 없습니다.'}</div>
           `}
         </div>
@@ -170,7 +192,7 @@ export default function ReportsPage() {
   const studentMockReports = indvReports.filter(r => r.studentId === selectedStudentId && r.type === 'mock').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
   const mockChartData = {
-    labels: studentMockReports.map(r => r.title),
+    labels: studentMockReports.map(r => r.mockData ? `${r.mockData.yearMonth || ''} ${r.mockData.type || ''}` : r.title),
     datasets: [
       {
         label: '국어 등급',
@@ -466,20 +488,38 @@ export default function ReportsPage() {
                               </div>
                             ) : report.type === 'plan' ? (
                               <div className="space-y-4">
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 hover:bg-slate-100 transition-colors">
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 hover:bg-slate-100 transition-colors relative">
                                   <input type="file" id={`file-upload-${report.id}`} className="hidden" accept=".hwp,.pdf,.doc,.docx" onChange={(e) => {
                                     if(e.target.files && e.target.files[0]) {
-                                      const fileName = e.target.files[0].name;
-                                      setIndvForm({...indvForm, content: `[첨부파일] ${fileName}\n\n` + indvForm.content});
+                                      const file = e.target.files[0];
+                                      const reader = new FileReader();
+                                      reader.onload = (event) => {
+                                        setIndvForm({...indvForm, fileData: { name: file.name, url: event.target?.result as string }});
+                                      };
+                                      reader.readAsDataURL(file);
                                     }
                                   }} />
                                   <label htmlFor={`file-upload-${report.id}`} className="cursor-pointer flex flex-col items-center">
                                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 border border-slate-200 text-slate-500 hover:text-blue-600 transition-colors">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                                     </div>
-                                    <p className="font-bold text-slate-700 mb-1">계획표 파일 업로드 (HWP, PDF)</p>
-                                    <p className="text-xs text-slate-500">클릭하여 파일을 선택하세요.</p>
+                                    {indvForm.fileData ? (
+                                      <>
+                                        <p className="font-bold text-blue-600 mb-1">{indvForm.fileData.name}</p>
+                                        <p className="text-xs text-slate-500">클릭하여 다른 파일로 변경</p>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <p className="font-bold text-slate-700 mb-1">계획표 파일 업로드 (HWP, PDF)</p>
+                                        <p className="text-xs text-slate-500">클릭하여 파일을 선택하세요.</p>
+                                      </>
+                                    )}
                                   </label>
+                                  {indvForm.fileData && (
+                                    <button onClick={(e) => { e.preventDefault(); setIndvForm({...indvForm, fileData: null}); }} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-red-500 bg-white rounded-full shadow-sm">
+                                      <Trash2 size={14} />
+                                    </button>
+                                  )}
                                 </div>
                                 <textarea 
                                   value={indvForm.content} 
@@ -490,31 +530,69 @@ export default function ReportsPage() {
                               </div>
                             ) : report.type === 'mock' ? (
                               <div className="space-y-4">
-                                <div className="grid grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                  <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-600 block text-center bg-white py-1 rounded border border-slate-200">국어</label>
+                                <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] gap-0 bg-slate-800 rounded-t-xl overflow-hidden text-center text-white font-bold text-xs">
+                                  <div className="p-3">시험명 설정</div>
+                                  <div className="p-3 border-l border-slate-700">국어<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                  <div className="p-3 border-l border-slate-700">수학<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                  <div className="p-3 border-l border-slate-700">영어<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                  <div className="p-3 border-l border-slate-700">탐구1<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                  <div className="p-3 border-l border-slate-700">탐구2<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                </div>
+                                <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] gap-0 bg-white border-b border-l border-r border-slate-200 rounded-b-xl shadow-sm text-center">
+                                  <div className="p-4 flex flex-col gap-2 border-r border-slate-100 justify-center">
+                                    <div className="flex gap-2">
+                                      <select value={indvForm.mockData?.grade || '3학년'} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, grade: e.target.value}})} className="flex-1 h-8 text-xs border border-slate-200 rounded outline-none px-1 bg-white">
+                                        <option value="1학년">1학년</option>
+                                        <option value="2학년">2학년</option>
+                                        <option value="3학년">3학년</option>
+                                        <option value="N수생">N수생</option>
+                                      </select>
+                                      <select value={indvForm.mockData?.yearMonth || ''} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, yearMonth: e.target.value}})} className="flex-1 h-8 text-xs border border-slate-200 rounded outline-none px-1 bg-white">
+                                        <option value="">연도 미상</option>
+                                        <option value="2025년 3월">2025년 3월</option>
+                                        <option value="2025년 4월">2025년 4월</option>
+                                        <option value="2025년 6월">2025년 6월</option>
+                                        <option value="2025년 7월">2025년 7월</option>
+                                        <option value="2025년 9월">2025년 9월</option>
+                                        <option value="2025년 10월">2025년 10월</option>
+                                        <option value="2025년 11월">2025년 11월</option>
+                                        <option value="2026 수능">2026 수능</option>
+                                      </select>
+                                    </div>
+                                    <select value={indvForm.mockData?.type || ''} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, type: e.target.value}})} className="w-full h-8 text-xs border border-slate-200 rounded outline-none px-2 bg-white">
+                                      <option value="">종류 선택...</option>
+                                      <option value="평가원/수능">평가원/수능</option>
+                                      <option value="교육청">교육청</option>
+                                      <option value="사설">사설</option>
+                                    </select>
+                                    <Input value={indvForm.mockData?.detail || ''} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, detail: e.target.value}})} placeholder="상세 (직접 입력)" className="h-8 text-xs text-center" />
+                                  </div>
+                                  
+                                  <div className="p-4 flex flex-col gap-2 border-r border-slate-100 justify-center">
+                                    <Input value={indvForm.mockData?.kScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, kScore: e.target.value}})} placeholder="점수" className="h-8 text-sm text-center" />
                                     <Input value={indvForm.mockData?.kGrade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, kGrade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
-                                    <Input value={indvForm.mockData?.kScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, kScore: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
                                   </div>
-                                  <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-600 block text-center bg-white py-1 rounded border border-slate-200">수학</label>
+                                  
+                                  <div className="p-4 flex flex-col gap-2 border-r border-slate-100 justify-center">
+                                    <Input value={indvForm.mockData?.mScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, mScore: e.target.value}})} placeholder="점수" className="h-8 text-sm text-center" />
                                     <Input value={indvForm.mockData?.mGrade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, mGrade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
-                                    <Input value={indvForm.mockData?.mScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, mScore: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
                                   </div>
-                                  <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-600 block text-center bg-white py-1 rounded border border-slate-200">영어</label>
+                                  
+                                  <div className="p-4 flex flex-col gap-2 border-r border-slate-100 justify-center">
+                                    <Input value={indvForm.mockData?.eScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, eScore: e.target.value}})} placeholder="점수" className="h-8 text-sm text-center" />
                                     <Input value={indvForm.mockData?.eGrade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, eGrade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
-                                    <Input value={indvForm.mockData?.eScore} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, eScore: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
                                   </div>
-                                  <div className="space-y-2">
-                                    <Input value={indvForm.mockData?.o1Name} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Name: e.target.value}})} placeholder="탐구1 과목명" className="h-6 text-[11px] font-bold bg-white text-center border border-slate-200 rounded px-1 w-full" />
+                                  
+                                  <div className="p-4 flex flex-col gap-2 border-r border-slate-100 justify-center">
+                                    <Input value={indvForm.mockData?.o1Name} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Name: e.target.value}})} placeholder="과목명" className="h-6 text-[10px] bg-slate-50 text-center border-none" />
+                                    <Input value={indvForm.mockData?.o1Score} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Score: e.target.value}})} placeholder="점수" className="h-8 text-sm text-center" />
                                     <Input value={indvForm.mockData?.o1Grade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Grade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
-                                    <Input value={indvForm.mockData?.o1Score} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o1Score: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
                                   </div>
-                                  <div className="space-y-2">
-                                    <Input value={indvForm.mockData?.o2Name} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Name: e.target.value}})} placeholder="탐구2 과목명" className="h-6 text-[11px] font-bold bg-white text-center border border-slate-200 rounded px-1 w-full" />
+                                  
+                                  <div className="p-4 flex flex-col gap-2 justify-center">
+                                    <Input value={indvForm.mockData?.o2Name} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Name: e.target.value}})} placeholder="과목명" className="h-6 text-[10px] bg-slate-50 text-center border-none" />
+                                    <Input value={indvForm.mockData?.o2Score} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Score: e.target.value}})} placeholder="점수" className="h-8 text-sm text-center" />
                                     <Input value={indvForm.mockData?.o2Grade} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Grade: e.target.value}})} placeholder="등급" className="h-8 text-sm text-center font-bold" />
-                                    <Input value={indvForm.mockData?.o2Score} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, o2Score: e.target.value}})} placeholder="원점수" className="h-8 text-sm text-center" />
                                   </div>
                                 </div>
                                 <textarea 
@@ -545,7 +623,7 @@ export default function ReportsPage() {
                                 <h4 className="text-lg font-black text-slate-800">{report.title}</h4>
                               </div>
                               <div className="flex gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity bg-slate-50 p-1 rounded-lg border border-slate-100">
-                                <button onClick={() => { setIsEditingIndv(report.id); setIndvForm({ date: report.date, title: report.title, content: report.content, studyAttitude: report.studyAttitude || '', selfStudyAttitude: report.selfStudyAttitude || '', mockData: report.mockData || defaultMockData }) }} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-md transition-colors" title="수정"><Edit size={16}/></button>
+                                <button onClick={() => { setIsEditingIndv(report.id); setIndvForm({ date: report.date, title: report.title, content: report.content, studyAttitude: report.studyAttitude || '', selfStudyAttitude: report.selfStudyAttitude || '', mockData: report.mockData || defaultMockData, fileData: report.fileData || null }) }} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-md transition-colors" title="수정"><Edit size={16}/></button>
                                 <button onClick={() => handleExportPDF(report)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md transition-colors" title="PDF 인쇄"><Printer size={16}/></button>
                                 <div className="w-px h-auto bg-slate-200 mx-0.5"></div>
                                 <button onClick={() => handleDeleteIndvReport(report.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={16}/></button>
@@ -562,34 +640,70 @@ export default function ReportsPage() {
                                   {report.selfStudyAttitude || <span className="text-slate-400 italic">입력된 내용이 없습니다.</span>}
                                 </div>
                               </div>
+                            ) : report.type === 'plan' ? (
+                              <div className="space-y-4">
+                                {report.fileData && (
+                                  <div className="flex items-center gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 shadow-sm">
+                                    <div className="p-2.5 bg-white rounded-lg text-blue-500 shadow-sm border border-slate-100"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div>
+                                    <div className="flex-1">
+                                      <p className="text-sm font-bold text-slate-700">{report.fileData.name}</p>
+                                      <p className="text-[11px] text-slate-500 mt-0.5">계획표 첨부파일</p>
+                                    </div>
+                                    <a href={report.fileData.url} download={report.fileData.name} className="px-4 py-2 bg-white text-blue-600 hover:bg-blue-600 hover:text-white text-xs font-bold rounded-lg border border-blue-200 transition-colors shadow-sm">다운로드</a>
+                                  </div>
+                                )}
+                                <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-loose bg-slate-50/80 p-5 rounded-xl border border-slate-100 font-medium">
+                                  {report.content || <span className="text-slate-400 italic">입력된 텍스트 계획이 없습니다.</span>}
+                                </div>
+                              </div>
                             ) : report.type === 'mock' ? (
                               <div className="space-y-4">
                                 {report.mockData && (
-                                  <div className="grid grid-cols-5 gap-2 text-center text-sm border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
-                                      <div className="font-bold text-slate-700 mb-1">국어</div>
-                                      <div className="text-blue-600 font-black text-xl">{report.mockData.kGrade || '-'}등급</div>
-                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.kScore || '-'}점</div>
+                                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                    <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] gap-0 bg-slate-800 text-center text-white font-bold text-xs">
+                                      <div className="p-3">시험명 설정</div>
+                                      <div className="p-3 border-l border-slate-700">국어<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                      <div className="p-3 border-l border-slate-700">수학<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                      <div className="p-3 border-l border-slate-700">영어<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                      <div className="p-3 border-l border-slate-700">탐구1<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
+                                      <div className="p-3 border-l border-slate-700">탐구2<br/><span className="text-[10px] text-slate-300 font-normal">원점수/등급</span></div>
                                     </div>
-                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
-                                      <div className="font-bold text-slate-700 mb-1">수학</div>
-                                      <div className="text-blue-600 font-black text-xl">{report.mockData.mGrade || '-'}등급</div>
-                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.mScore || '-'}점</div>
-                                    </div>
-                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
-                                      <div className="font-bold text-slate-700 mb-1">영어</div>
-                                      <div className="text-blue-600 font-black text-xl">{report.mockData.eGrade || '-'}등급</div>
-                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.eScore || '-'}점</div>
-                                    </div>
-                                    <div className="bg-slate-50 p-3 border-r border-slate-200">
-                                      <div className="font-bold text-slate-700 mb-1">{report.mockData.o1Name || '탐구1'}</div>
-                                      <div className="text-blue-600 font-black text-xl">{report.mockData.o1Grade || '-'}등급</div>
-                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.o1Score || '-'}점</div>
-                                    </div>
-                                    <div className="bg-slate-50 p-3">
-                                      <div className="font-bold text-slate-700 mb-1">{report.mockData.o2Name || '탐구2'}</div>
-                                      <div className="text-blue-600 font-black text-xl">{report.mockData.o2Grade || '-'}등급</div>
-                                      <div className="text-slate-500 text-xs mt-1">{report.mockData.o2Score || '-'}점</div>
+                                    <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] gap-0 bg-white text-center">
+                                      <div className="p-4 flex flex-col gap-1 border-r border-slate-100 justify-center">
+                                        <div className="flex gap-1 justify-center">
+                                          <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{report.mockData.grade || '3학년'}</span>
+                                          <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{report.mockData.yearMonth || '연도 미상'}</span>
+                                        </div>
+                                        <span className="text-xs font-bold text-blue-600 border border-blue-100 bg-blue-50 px-2 py-0.5 rounded mt-1">{report.mockData.type || '종류 미상'}</span>
+                                        {report.mockData.detail && <span className="text-[11px] text-slate-500 mt-1">{report.mockData.detail}</span>}
+                                      </div>
+                                      
+                                      <div className="p-4 flex flex-col justify-center border-r border-slate-100">
+                                        <div className="text-slate-500 text-xs mb-1">{report.mockData.kScore || '-'}점</div>
+                                        <div className="text-blue-600 font-black text-xl">{report.mockData.kGrade || '-'}등급</div>
+                                      </div>
+                                      
+                                      <div className="p-4 flex flex-col justify-center border-r border-slate-100">
+                                        <div className="text-slate-500 text-xs mb-1">{report.mockData.mScore || '-'}점</div>
+                                        <div className="text-blue-600 font-black text-xl">{report.mockData.mGrade || '-'}등급</div>
+                                      </div>
+                                      
+                                      <div className="p-4 flex flex-col justify-center border-r border-slate-100">
+                                        <div className="text-slate-500 text-xs mb-1">{report.mockData.eScore || '-'}점</div>
+                                        <div className="text-blue-600 font-black text-xl">{report.mockData.eGrade || '-'}등급</div>
+                                      </div>
+                                      
+                                      <div className="p-4 flex flex-col justify-center border-r border-slate-100">
+                                        <div className="font-bold text-slate-700 text-[11px] mb-2 bg-slate-50 py-0.5 rounded">{report.mockData.o1Name || '탐구1'}</div>
+                                        <div className="text-slate-500 text-xs mb-1">{report.mockData.o1Score || '-'}점</div>
+                                        <div className="text-blue-600 font-black text-xl">{report.mockData.o1Grade || '-'}등급</div>
+                                      </div>
+                                      
+                                      <div className="p-4 flex flex-col justify-center">
+                                        <div className="font-bold text-slate-700 text-[11px] mb-2 bg-slate-50 py-0.5 rounded">{report.mockData.o2Name || '탐구2'}</div>
+                                        <div className="text-slate-500 text-xs mb-1">{report.mockData.o2Score || '-'}점</div>
+                                        <div className="text-blue-600 font-black text-xl">{report.mockData.o2Grade || '-'}등급</div>
+                                      </div>
                                     </div>
                                   </div>
                                 )}

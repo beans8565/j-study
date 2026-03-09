@@ -549,21 +549,24 @@ export default function ReportsPage() {
                                       </select>
                                       <select value={indvForm.mockData?.yearMonth || ''} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, yearMonth: e.target.value}})} className="flex-1 h-8 text-xs border border-slate-200 rounded outline-none px-1 bg-white">
                                         <option value="">연도 미상</option>
-                                        <option value="2025년 3월">2025년 3월</option>
-                                        <option value="2025년 4월">2025년 4월</option>
-                                        <option value="2025년 6월">2025년 6월</option>
-                                        <option value="2025년 7월">2025년 7월</option>
-                                        <option value="2025년 9월">2025년 9월</option>
-                                        <option value="2025년 10월">2025년 10월</option>
-                                        <option value="2025년 11월">2025년 11월</option>
-                                        <option value="2026 수능">2026 수능</option>
+                                        <option value="2021년">2021년</option>
+                                        <option value="2022년">2022년</option>
+                                        <option value="2023년">2023년</option>
+                                        <option value="2024년">2024년</option>
+                                        <option value="2025년">2025년</option>
+                                        <option value="2026년">2026년</option>
                                       </select>
                                     </div>
                                     <select value={indvForm.mockData?.type || ''} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, type: e.target.value}})} className="w-full h-8 text-xs border border-slate-200 rounded outline-none px-2 bg-white">
                                       <option value="">종류 선택...</option>
-                                      <option value="평가원/수능">평가원/수능</option>
-                                      <option value="교육청">교육청</option>
-                                      <option value="사설">사설</option>
+                                      <option value="3월 학평 (교육청)">3월 학평 (교육청)</option>
+                                      <option value="4월 학평 (교육청)">4월 학평 (교육청)</option>
+                                      <option value="6월 모평 (평가원)">6월 모평 (평가원)</option>
+                                      <option value="7월 학평 (교육청)">7월 학평 (교육청)</option>
+                                      <option value="9월 모평 (평가원)">9월 모평 (평가원)</option>
+                                      <option value="10월 학평 (교육청)">10월 학평 (교육청)</option>
+                                      <option value="수능 (평가원)">수능 (평가원)</option>
+                                      <option value="사설 모의고사">사설 모의고사</option>
                                     </select>
                                     <Input value={indvForm.mockData?.detail || ''} onChange={e => setIndvForm({...indvForm, mockData: {...indvForm.mockData, detail: e.target.value}})} placeholder="상세 (직접 입력)" className="h-8 text-xs text-center" />
                                   </div>

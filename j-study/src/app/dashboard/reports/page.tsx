@@ -32,7 +32,7 @@ ChartJS.register(
 
 export default function ReportsPage() {
   const { currentBranch, students } = useDashboard()
-  const [activeTab, setActiveTab] = useState('daily') // daily, weekly, individual
+  const [activeTab, setActiveTab] = useState('individual') // weekly, individual
   
   // Daily Reports State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -245,13 +245,6 @@ export default function ReportsPage() {
         </div>
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
           <button 
-            onClick={() => setActiveTab('daily')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'daily' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <CalendarDays size={18} />
-            일일 종합 리포트
-          </button>
-          <button 
             onClick={() => setActiveTab('weekly')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'weekly' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
@@ -271,72 +264,6 @@ export default function ReportsPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-        {activeTab === 'daily' && (
-          <div className="max-w-5xl mx-auto animate-in fade-in duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800">일일 학습 리포트</h1>
-                <p className="text-sm text-slate-500 mt-1">{currentBranch} 학생들의 자습 태도와 특이사항을 기록합니다.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-auto bg-white shadow-sm border-slate-200" />
-                <Button className="bg-slate-800 text-white shadow-sm hover:bg-slate-900">조회</Button>
-              </div>
-            </div>
-
-            <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 border-b-slate-200 hover:bg-slate-50">
-                    <TableHead className="w-[120px] font-bold text-slate-700">이름</TableHead>
-                    <TableHead className="w-[100px] font-bold text-slate-700">학년</TableHead>
-                    <TableHead className="w-[150px] font-bold text-slate-700">자습 태도 점수</TableHead>
-                    <TableHead className="font-bold text-slate-700">일일 특이사항 / 코멘트</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12 text-slate-500">조회된 학생이 없습니다.</TableCell>
-                    </TableRow>
-                  ) : reports.map((report) => (
-                    <TableRow key={report.id} className="border-b-slate-100 hover:bg-blue-50/30 transition-colors">
-                      <TableCell className="font-bold text-slate-800">{report.name}</TableCell>
-                      <TableCell className="text-slate-500 text-sm font-medium">{report.grade}</TableCell>
-                      <TableCell>
-                        <Select value={report.attitudeScore} onValueChange={(val) => handleChange(report.id, 'attitudeScore', val)}>
-                          <SelectTrigger className="h-9 text-xs font-medium bg-slate-50/50 border-slate-200 focus:ring-blue-500">
-                            <SelectValue placeholder="점수 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5" className="font-bold text-blue-600">5점 (매우 우수)</SelectItem>
-                            <SelectItem value="4" className="font-bold text-emerald-600">4점 (우수)</SelectItem>
-                            <SelectItem value="3" className="font-medium text-slate-600">3점 (보통)</SelectItem>
-                            <SelectItem value="2" className="font-medium text-orange-500">2점 (미흡)</SelectItem>
-                            <SelectItem value="1" className="font-bold text-red-600">1점 (매우 미흡)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Input 
-                          value={report.comments} 
-                          onChange={(e) => handleChange(report.id, 'comments', e.target.value)}
-                          placeholder="오늘의 특이사항을 입력해주세요..." 
-                          className="w-full h-9 text-sm bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-blue-500 transition-colors"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <Button variant="outline" className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50">초기화</Button>
-              <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200">전체 저장 및 학부모 알림 발송</Button>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'weekly' && (
           <div className="max-w-5xl mx-auto flex flex-col items-center justify-center h-full min-h-[400px] text-slate-500 animate-in fade-in duration-300">
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">

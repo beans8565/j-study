@@ -13,7 +13,8 @@ import {
   Clock, 
   Ticket,
   LogOut,
-  FileText
+  FileText,
+  UserCog
 } from "lucide-react"
 
 export default function DashboardNav() {
@@ -29,7 +30,7 @@ export default function DashboardNav() {
     { name: "대시보드", href: "/dashboard", icon: PieChart },
     { name: "학생 통합 관리", href: "/dashboard/students", icon: Users },
     { name: "성향 진단 & 태그", href: "/dashboard/diagnosis", icon: ClipboardList },
-    { name: "월간 스케줄 관리", href: "/dashboard/schedule", icon: CalendarCheck },
+    { name: "스케줄 관리", href: "/dashboard/schedule", icon: CalendarCheck },
     { name: "점검 및 리포트", href: "/dashboard/reports", icon: FileSignature },
   ]
 
@@ -38,6 +39,7 @@ export default function DashboardNav() {
     { name: "출결 및 동선 관리", href: "/dashboard/attendance", icon: Clock },
     { name: "운영 및 특이사항", href: "/dashboard/operations", icon: FileText },
     { name: "벌점 및 휴식권 관리", href: "/dashboard/demerit", icon: Ticket },
+    { name: "관리자 설정", href: "/dashboard/admin", icon: UserCog },
   ]
 
   const handleNavClick = (e: React.MouseEvent, alertMsg?: string) => {

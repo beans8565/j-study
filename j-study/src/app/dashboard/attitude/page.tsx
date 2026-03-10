@@ -3,13 +3,43 @@
 import { useState } from "react"
 import { useDashboard } from "@/components/providers/DashboardProvider"
 import { Button } from "@/components/ui/button"
-import { BarChart, FileDown, CalendarDays, CalendarRange } from "lucide-react"
+import { BarChart, FileDown, CalendarDays, CalendarRange, Settings, X, Plus, Trash2 } from "lucide-react"
+
+// Types for Settings
+type GradeCriteria = { id: string, label: string, min: number, max: number, color: string }
+type PointItem = { id: string, type: 'deduction' | 'bonus', name: string, points: number }
 
 export default function AttitudeReportPage() {
   const { currentBranch } = useDashboard()
   const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('monthly')
   const [period, setPeriod] = useState("2026-02")
   const [isGenerating, setIsGenerating] = useState(false)
+  
+  // Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [grades, setGrades] = useState<GradeCriteria[]>([
+    { id: '1', label: 'S (최우수)', min: 95, max: 100, color: 'blue' },
+    { id: '2', label: 'A (우수)', min: 83, max: 94, color: 'emerald' },
+    { id: '3', label: 'B (보통)', min: 74, max: 82, color: 'slate' },
+    { id: '4', label: 'C (미흡)', min: 65, max: 73, color: 'orange' },
+    { id: '5', label: 'D (불량)', min: 0, max: 64, color: 'red' },
+  ])
+  const [pointItems, setPointItems] = useState<PointItem[]>([
+    { id: 'p1', type: 'deduction', name: '무단 지각', points: -3 },
+    { id: 'p2', type: 'deduction', name: '사전 보고 지각', points: -1 },
+    { id: 'p3', type: 'deduction', name: '무단 결석', points: -10 },
+    { id: 'p4', type: 'deduction', name: '졸음 (1회)', points: -1 },
+    { id: 'p5', type: 'deduction', name: '동일 교시 졸음 2회', points: -3 },
+    { id: 'p6', type: 'deduction', name: '무단 이석', points: -2 },
+    { id: 'p7', type: 'deduction', name: '휴식권 초과 (1장당)', points: -3 },
+    { id: 'p8', type: 'bonus', name: '휴식권 미사용 (1장당)', points: 1 },
+    { id: 'p9', type: 'bonus', name: '마지막 교시 잔류', points: 3 },
+    { id: 'p10', type: 'bonus', name: '영단어 통과', points: 1 },
+  ])
+
+  const handleAddPointItem = (type: 'deduction' | 'bonus') => {
+    setPointItems([...pointItems, { id: `new_${Date.now()}`, type, name: '', points: type === 'bonus' ? 1 : -1 }])
+  }
 
   // Demo stats based on provided HTML
   const stats = {
@@ -134,6 +164,13 @@ export default function AttitudeReportPage() {
                 )}
               </select>
               <Button 
+                onClick={() => setIsSettingsOpen(true)}
+                variant="outline"
+                className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 h-11 px-4 shadow-sm"
+              >
+                <Settings size={18} className="mr-2" /> 평가 기준 설정
+              </Button>
+              <Button 
                 onClick={handleDownloadPDF} 
                 disabled={isGenerating}
                 className="bg-slate-800 text-white hover:bg-slate-900 shadow-md h-11 px-5"
@@ -255,6 +292,98 @@ export default function AttitudeReportPage() {
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Settings size={20} className="text-blue-600" />
+                  학습태도 평가 기준 설정
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">등급 커트라인과 가감점 배점을 지점 상황에 맞게 커스텀합니다.</p>
+              </div>
+              <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/50">
+              {/* Grade Settings */}
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <BarChart size={18} className="text-slate-600" /> 1. 등급 구간 설정
+                </h3>
+                <div className="space-y-3">
+                  {grades.map(grade => (
+                    <div key={grade.id} className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className={`w-24 font-bold text-${grade.color}-600`}>{grade.label}</div>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={grade.min} onChange={(e) => setGrades(grades.map(g => g.id === grade.id ? {...g, min: Number(e.target.value)} : g))} className="w-20 px-3 py-1.5 border border-slate-300 rounded-md text-sm text-center font-bold" />
+                        <span className="text-slate-400">점 ~</span>
+                        <input type="number" value={grade.max} onChange={(e) => setGrades(grades.map(g => g.id === grade.id ? {...g, max: Number(e.target.value)} : g))} className="w-20 px-3 py-1.5 border border-slate-300 rounded-md text-sm text-center font-bold" />
+                        <span className="text-slate-400">점</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Deductions */}
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-red-500">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-red-600">2. 의무 위반 감점 (-)</h3>
+                    <Button size="sm" variant="outline" onClick={() => handleAddPointItem('deduction')} className="h-8 text-xs border-red-200 text-red-600 hover:bg-red-50">
+                      <Plus size={14} className="mr-1" /> 항목 추가
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {pointItems.filter(p => p.type === 'deduction').map(item => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <input type="text" value={item.name} onChange={(e) => setPointItems(pointItems.map(p => p.id === item.id ? {...p, name: e.target.value} : p))} className="flex-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm" placeholder="감점 사유" />
+                        <input type="number" value={item.points} onChange={(e) => setPointItems(pointItems.map(p => p.id === item.id ? {...p, points: Number(e.target.value)} : p))} className="w-20 px-3 py-1.5 border border-slate-300 rounded-md text-sm text-center text-red-600 font-bold" />
+                        <button onClick={() => setPointItems(pointItems.filter(p => p.id !== item.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50"><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bonuses */}
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-emerald-500">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-emerald-600">3. 자율 성취 가산점 (+)</h3>
+                    <Button size="sm" variant="outline" onClick={() => handleAddPointItem('bonus')} className="h-8 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50">
+                      <Plus size={14} className="mr-1" /> 항목 추가
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {pointItems.filter(p => p.type === 'bonus').map(item => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <input type="text" value={item.name} onChange={(e) => setPointItems(pointItems.map(p => p.id === item.id ? {...p, name: e.target.value} : p))} className="flex-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm" placeholder="가산 사유" />
+                        <input type="number" value={item.points} onChange={(e) => setPointItems(pointItems.map(p => p.id === item.id ? {...p, points: Number(e.target.value)} : p))} className="w-20 px-3 py-1.5 border border-slate-300 rounded-md text-sm text-center text-emerald-600 font-bold" />
+                        <button onClick={() => setPointItems(pointItems.filter(p => p.id !== item.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50"><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-200 bg-white shrink-0 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setIsSettingsOpen(false)} className="px-6 border-slate-200">취소</Button>
+              <Button onClick={() => {
+                alert('평가 기준이 저장되었습니다. 향후 리포트 생성 시 이 기준이 적용됩니다.');
+                setIsSettingsOpen(false);
+              }} className="px-8 bg-blue-600 hover:bg-blue-700 shadow-md">
+                저장 및 적용
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

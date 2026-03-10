@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDashboard } from "@/components/providers/DashboardProvider"
 import { Button } from "@/components/ui/button"
 import { BarChart, FileDown, CalendarDays, CalendarRange, Settings, X, Plus, Trash2 } from "lucide-react"
@@ -41,16 +41,113 @@ export default function AttitudeReportPage() {
     setPointItems([...pointItems, { id: `new_${Date.now()}`, type, name: '', points: type === 'bonus' ? 1 : -1 }])
   }
 
-  // Demo stats based on provided HTML
-  const stats = {
-    s: 0, a: 0, b: 0, c: 0, d: 0
-  }
+  const [statsData, setStatsData] = useState({ s: 0, a: 0, b: 0, c: 0, d: 0 })
+  const [topPerformers, setTopPerformers] = useState<any[]>([])
+  const [bottomPerformers, setBottomPerformers] = useState<any[]>([])
+  const [studentDataList, setStudentDataList] = useState<any[]>([])
 
-  const topPerformers: any[] = []
+  useEffect(() => {
+    if (!students || students.length === 0) return;
 
-  const bottomPerformers: any[] = []
-
-  const studentDataList: any[] = []
+    const branchStudents = students.filter(s => currentBranch === '전체' || s.branch === currentBranch);
+    
+    let totalS = 0, totalA = 0, totalB = 0, totalC = 0, totalD = 0;
+    const processedStudents = branchStudents.map(student => {
+      let score = 100;
+      let deductions: any[] = [];
+      let bonuses: any[] = [];
+      
+      const history = student.demeritHistory || [];
+      
+      history.forEach(h => {
+        const deductionMatch = pointItems.find(p => p.type === 'deduction' && h.reason.includes(p.name));
+        const bonusMatch = pointItems.find(p => p.type === 'bonus' && h.reason.includes(p.name));
+        
+        if (deductionMatch) {
+          score += deductionMatch.points;
+          deductions.push({ label: h.reason, val: `${deductionMatch.points}점` });
+        } else if (h.effectDemerit > 0) {
+          score -= h.effectDemerit;
+          deductions.push({ label: h.reason, val: `-${h.effectDemerit}점` });
+        }
+        
+        if (bonusMatch) {
+          score += bonusMatch.points;
+          bonuses.push({ label: h.reason, val: `+${bonusMatch.points}점` });
+        }
+      });
+      
+      const attData = student.attendance ? Object.values(student.attendance) : [];
+      attData.forEach((att: any) => {
+        const status = typeof att === 'string' ? att : att.status;
+        if (status === '지각') {
+          const latePenalty = pointItems.find(p => p.name.includes('지각'))?.points || -3;
+          score += latePenalty;
+          deductions.push({ label: '지각', val: `${latePenalty}점` });
+        } else if (status === '결석') {
+          const absentPenalty = pointItems.find(p => p.name.includes('결석'))?.points || -10;
+          score += absentPenalty;
+          deductions.push({ label: '결석', val: `${absentPenalty}점` });
+        }
+      });
+      
+      score = Math.max(0, Math.min(100, score));
+      let gradeLabel = 'F';
+      let colorClass = 'text-slate-500';
+      let bgClass = 'bg-slate-50';
+      
+      const gradeRule = grades.find(g => score >= g.min && score <= g.max);
+      if (gradeRule) {
+        gradeLabel = gradeRule.label.split(' ')[0];
+        colorClass = `text-${gradeRule.color}-500`;
+        bgClass = `bg-${gradeRule.color}-50`;
+        
+        if (gradeLabel === 'S') totalS++;
+        else if (gradeLabel === 'A') totalA++;
+        else if (gradeLabel === 'B') totalB++;
+        else if (gradeLabel === 'C') totalC++;
+        else totalD++;
+      } else {
+        totalD++;
+      }
+      
+      let insight = '특이사항 없음';
+      if (score >= 90) insight = '우수한 학습 태도를 유지하고 있습니다.';
+      else if (score < 70) insight = '학습 태도 개선을 위한 면담이 필요합니다.';
+      
+      return {
+        name: student.name,
+        grade: gradeLabel,
+        score,
+        color: colorClass,
+        bg: bgClass,
+        deductions: deductions.length > 0 ? deductions : [{label: '감점 없음', val: '0점'}],
+        bonuses: bonuses.length > 0 ? bonuses : [{label: '가산점 없음', val: '0점'}],
+        insight,
+        rawStudent: student
+      };
+    }).sort((a, b) => b.score - a.score);
+    
+    const total = processedStudents.length || 1;
+    setStatsData({
+      s: Math.round((totalS/total)*100),
+      a: Math.round((totalA/total)*100),
+      b: Math.round((totalB/total)*100),
+      c: Math.round((totalC/total)*100),
+      d: Math.round((totalD/total)*100),
+    });
+    
+    setStudentDataList(processedStudents);
+    
+    setTopPerformers(processedStudents.slice(0, 3).map((p, i) => ({
+      rank: i + 1, name: p.name, score: `${p.score}점`, type: '종합 우수'
+    })));
+    
+    setBottomPerformers(processedStudents.slice(-3).reverse().map(p => ({
+      name: p.name, score: `${p.score}점`, reason: '종합 미흡'
+    })));
+    
+  }, [students, currentBranch, grades, pointItems, period]);
 
   const handleDownloadPDF = async () => {
     setIsGenerating(true)

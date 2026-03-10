@@ -261,19 +261,19 @@ export default function AttitudeReportPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border border-slate-100">
                     <span className="font-bold text-blue-600">S 등급 (90점 이상)</span>
-                    <span className="text-xl font-black text-slate-800">{stats.s}%</span>
+                    <span className="text-xl font-black text-slate-800">{statsData.s}%</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border border-slate-100">
                     <span className="font-bold text-emerald-600">A 등급 (80~89점)</span>
-                    <span className="text-xl font-black text-slate-800">{stats.a}%</span>
+                    <span className="text-xl font-black text-slate-800">{statsData.a}%</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border border-slate-100">
                     <span className="font-bold text-orange-500">C 등급 (60~69점)</span>
-                    <span className="text-xl font-black text-slate-800">{stats.c}%</span>
+                    <span className="text-xl font-black text-slate-800">{statsData.c}%</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border border-slate-100">
                     <span className="font-bold text-red-500">D 등급 (60점 미만)</span>
-                    <span className="text-xl font-black text-slate-800">{stats.d}%</span>
+                    <span className="text-xl font-black text-slate-800">{statsData.d}%</span>
                   </div>
                 </div>
               </div>

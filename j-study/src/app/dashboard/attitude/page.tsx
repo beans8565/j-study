@@ -10,7 +10,7 @@ type GradeCriteria = { id: string, label: string, min: number, max: number, colo
 type PointItem = { id: string, type: 'deduction' | 'bonus', name: string, points: number }
 
 export default function AttitudeReportPage() {
-  const { currentBranch } = useDashboard()
+  const { currentBranch, students } = useDashboard()
   const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('monthly')
   const [period, setPeriod] = useState("2026-02")
   const [isGenerating, setIsGenerating] = useState(false)

@@ -43,40 +43,14 @@ export default function AttitudeReportPage() {
 
   // Demo stats based on provided HTML
   const stats = {
-    s: 40, a: 30, b: 0, c: 10, d: 20
+    s: 0, a: 0, b: 0, c: 0, d: 0
   }
 
-  const topPerformers = [
-    { rank: 1, name: "김현규", score: "14회", type: "의무 외 자습" },
-    { rank: 2, name: "한상학", score: "10회", type: "의무 외 자습" },
-    { rank: 1, name: "황석현", score: "23회", type: "영단어 통과" },
-  ]
+  const topPerformers: any[] = []
 
-  const bottomPerformers = [
-    { name: "김현규", score: "36회", reason: "졸음 적발" },
-    { name: "김승찬", score: "31회", reason: "졸음 적발" },
-    { name: "김승찬", score: "7회", reason: "지각 누적" },
-    { name: "이서연", score: "26개", reason: "휴식권 소진" },
-  ]
+  const bottomPerformers: any[] = []
 
-  const studentDataList = [
-    { name: "황석현", grade: "S", score: 100, color: "text-blue-500", bg: "bg-blue-50",
-      deductions: [{label: "졸음 적발 (7회)", val: "-10점"}, {label: "휴식권 (5개)", val: "-5점"}], 
-      bonuses: [{label: "영단어 통과 (23회)", val: "+23점"}, {label: "자습 (1회)", val: "+2점"}], 
-      insight: "영단어 암기(23회) 부문 압도적 1위입니다. 탁월한 성실함으로 모든 감점 요소를 극복했습니다." },
-    { name: "김태희", grade: "S", score: 91, color: "text-blue-500", bg: "bg-blue-50",
-      deductions: [{label: "휴식권 (10개)", val: "-10점"}, {label: "지각 (1회)", val: "-2점"}], 
-      bonuses: [{label: "의무 외 자습 (2회)", val: "+4점"}], 
-      insight: "우수한 성적을 기록했으나 휴식권 사용이 다소 많습니다. 체력 안배에 신경 쓰면 완벽할 것입니다." },
-    { name: "한상학", grade: "A", score: 87, color: "text-emerald-500", bg: "bg-emerald-50",
-      deductions: [{label: "휴식권 (13개)", val: "-13점"}, {label: "졸음 (9회)", val: "-12점"}], 
-      bonuses: [{label: "자습 (10회)", val: "+20점"}], 
-      insight: "자기주도학습은 매우 훌륭하나, 잦은 졸음과 휴식권 사용으로 점수가 하락했습니다. 집중력을 높여야 합니다." },
-    { name: "김승찬", grade: "D", score: 40, color: "text-red-500", bg: "bg-red-50",
-      deductions: [{label: "졸음 (31회)", val: "-62점"}, {label: "지각 (7회)", val: "-10점"}], 
-      bonuses: [{label: "자습 (8회)", val: "+16점"}], 
-      insight: "잦은 지각과 심각한 졸음이 겹쳐 정규 학습 시간 활용이 거의 이루어지지 않고 있습니다." },
-  ]
+  const studentDataList: any[] = []
 
   const handleDownloadPDF = async () => {
     setIsGenerating(true)
@@ -86,7 +60,7 @@ export default function AttitudeReportPage() {
       
       const opt = {
         margin:       10,
-        filename:     `${currentBranch}_${activeTab === 'monthly' ? '월간' : '주간'}_학습태도보고서_${period}.pdf`,
+        filename:     `${currentBranch}_${activeTab === 'monthly' ? '월간' : '주간'}_자습태도보고서_${period}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -109,7 +83,7 @@ export default function AttitudeReportPage() {
           <h2 className="font-black text-slate-800 tracking-tight text-lg flex items-center gap-2">
             <BarChart size={18} className="text-blue-600" /> 종합 보고서
           </h2>
-          <p className="text-xs text-slate-500 mt-1">지점별 학습태도 통계 리포트</p>
+          <p className="text-xs text-slate-500 mt-1">지점별 자습태도 통계 리포트</p>
         </div>
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
           <button 
@@ -117,14 +91,14 @@ export default function AttitudeReportPage() {
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'weekly' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             <CalendarDays size={18} />
-            주간 학습태도 보고서
+            주간 자습태도 보고서
           </button>
           <button 
             onClick={() => setActiveTab('monthly')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'monthly' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             <CalendarRange size={18} />
-            월간 학습태도 보고서
+            월간 자습태도 보고서
           </button>
         </nav>
       </div>
@@ -139,7 +113,7 @@ export default function AttitudeReportPage() {
                 <BarChart size={12} /> {activeTab === 'monthly' ? 'Monthly Report' : 'Weekly Report'}
               </div>
               <h1 className="text-2xl font-black text-slate-800 mb-1">
-                {currentBranch} {activeTab === 'monthly' ? '월간' : '주간'} 학습태도 종합 보고서
+                {currentBranch} {activeTab === 'monthly' ? '월간' : '주간'} 자습태도 종합 보고서
               </h1>
               <p className="text-sm text-slate-500 font-medium">전체 학생의 태도 점수 통계 및 우수/미흡 학생 분석 결과를 제공합니다.</p>
             </div>
@@ -301,7 +275,7 @@ export default function AttitudeReportPage() {
               <div>
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   <Settings size={20} className="text-blue-600" />
-                  학습태도 평가 기준 설정
+                  자습태도 평가 기준 설정
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">등급 커트라인과 가감점 배점을 지점 상황에 맞게 커스텀합니다.</p>
               </div>

@@ -33,7 +33,7 @@ export default function DashboardNav() {
     { name: "성향 진단 & 태그", href: "/dashboard/diagnosis", icon: ClipboardList },
     { name: "스케줄 관리", href: "/dashboard/schedule", icon: CalendarCheck },
     { name: "점검 및 리포트", href: "/dashboard/reports", icon: FileSignature },
-    { name: "학습태도 분석 보고서", href: "/dashboard/attitude", icon: BarChart },
+    { name: "자습태도 분석 보고서", href: "/dashboard/attitude", icon: BarChart },
   ]
 
   const opNavItems = [
